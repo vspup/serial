@@ -28,12 +28,13 @@ class Uart:
         self.buffer = []
         self.bufferCounter = 0
         self.fParsing = False
-        self.pacStart = '$'
-        self.pacStop = ';'
+        self.pacStart = b'$'
+        self.pacStop = b';'
 
     def parsing(self):
         if self.port.inWaiting():
             c = self.port.read()
+            # print(c)
             # ignory return and new line
             if (c == b'\r') or (c == b'\n'):
                 return False
@@ -48,7 +49,7 @@ class Uart:
                 self.buffer = []
                 return False
             if self.fParsing:
-                self.append(c)
+                self.buffer.append(c.decode('ascii'))
                 self.bufferCounter = self.bufferCounter+1
         return False
 
