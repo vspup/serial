@@ -31,7 +31,7 @@ class Uart:
         self.pacStart = b'$'
         self.pacStop = b';'
 
-    def parsing(self):
+    def readPackages(self):
         if self.port.inWaiting():
             c = self.port.read()
             # print(c)
@@ -56,6 +56,11 @@ class Uart:
     def data(self):
         return self.buffer
 
+    def sendPackages(self, data):
+        pack = '$125;'
+        print(pack)
+        self.port.write(pack.encode('utf8'))
+
     def close(self):
         self.port.close()
 
@@ -65,8 +70,10 @@ uart = Uart(s_uart)
 
 try:
     while 1:
-        if uart.parsing():
-            print(uart.data())
+        if uart.readPackages():
+            print("read " + str(uart.bufferCounter) + " : " + str(uart.data()))
+        time.sleep(0.8)
+        uart.sendPackages('125')
 
 finally:
     uart.close()
