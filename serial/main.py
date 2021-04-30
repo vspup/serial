@@ -5,31 +5,67 @@ import serial
 import time
 
 # name of serial port
-uart = 'COM16'
+s_uart = 'COM11'
 
-def read(port):
-    t = time.time()
-    read_buffer = b''
-    t_wait = 0.8
 
-    job = True
-    while job:
-        if time.time() < t + t_wait:
-            if port.inWaiting():
-                c = port.read()  # attempt to read a character from Serial
-                if c == b'\r':
-                    read_buffer += c
-                    pass
 
-                elif c == b'\n':
-                    read_buffer += c  # add the newline to the buffer
-                    job = False
+# class create gui to coil
+class Uart:
 
-                else:
-                    read_buffer += c  # add to the buffer
+    def __init__(self, s_serial):
 
-        else:
-            read_buffer = ""
-            job = False
+        self.port = serial.Serial(
+            port=s_serial,
+            baudrate=9600,
+            parity=serial.PARITY_NONE,
+            stopbits=serial.STOPBITS_ONE,
+            bytesize=serial.EIGHTBITS,
+            # timeout=0.5, # IMPORTANT, can be lower or higher
+            # inter_byte_timeout=0.1 # Alternative
+        )
 
-    return read_buffer
+        # variable for parsing
+        self.buffer = []
+        self.bufferCounter = 0
+        self.fParsing = False
+        self.pacStart = '$'
+        self.pacStop = ';'
+
+    def parsing(self):
+        if self.port.inWaiting():
+            c = self.port.read()
+            # ignory return and new line
+            if (c == b'\r') or (c == b'\n'):
+                return False
+            # packages end
+            if c == self.pacStop:
+                self.fParsing = False
+                return True
+            # start packages
+            if c == self.pacStart:
+                self.fParsing = True
+                self.bufferCounter = 0
+                self.buffer = []
+                return False
+            if self.fParsing:
+                self.append(c)
+                self.bufferCounter = self.bufferCounter+1
+        return False
+
+    def data(self):
+        return self.buffer
+
+    def close(self):
+        self.port.close()
+
+
+uart = Uart(s_uart)
+
+
+try:
+    while 1:
+        if uart.parsing():
+            print(uart.data())
+
+finally:
+    uart.close()
