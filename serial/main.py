@@ -51,7 +51,7 @@ def serial_ports():
             pass
     return result
 
-print(serial_ports())
+
 
 # start windows
 root = Tk()
@@ -73,15 +73,45 @@ note.bind("<<NotebookTabChanged>>", findTab)
 
 
 # status bar
-comboExample = ttk.Combobox(root, values=serial_ports())
+comboSerials = ttk.Combobox(root, values=serial_ports())
+comboSerials.grid(column=0, row=1)
+comboSerials.current(0)
+#print(comboSerials.current(), comboSerials.get())
 
-print(dict(comboExample))
-comboExample.grid(column=0, row=1)
-comboExample.current(0)
+serial_speeds = ['1843200', '921600', '460800', '230400', '115200', '57600', '38400', '19200', '9600', '4800', '2400', '1200', '600', '300', '150', '100', '75', '50'] #Скорость COM порта
+comboSpeed = ttk.Combobox(root, values=serial_speeds)
+comboSpeed.grid(column=1, row=1)
+comboSpeed.current(8)
 
-bar=Button(root, text="off", bg="light grey")
-bar.grid(column=2, row=1)
+buttonConnect = Button(root, text="Connect", bg="light grey")
+buttonConnect.grid(column=2, row=1)
+fConnect = False
 
+def connectUart():
+    global ser
+    global fConnect
+
+    if not fConnect:
+        ser = serial.Serial(
+            port=comboSerials.get(),
+            baudrate=int(comboSpeed.get()),
+            parity=serial.PARITY_NONE,
+            stopbits=serial.STOPBITS_ONE,
+            bytesize=serial.EIGHTBITS,
+            # timeout=0.5, # IMPORTANT, can be lower or higher
+            # inter_byte_timeout=0.1 # Alternative
+        )
+        print(ser)
+        buttonConnect['text'] = "Connected"
+        fConnect = True
+
+    else:
+        print('disconnect')
+        fConnect = False
+        buttonConnect['text'] = "Connect"
+        ser.close()
+
+buttonConnect['command'] = connectUart
 
 
 # organize tab 1
