@@ -10,16 +10,56 @@ from time import *
 from random import *
 import numpy
 import math
+import sys
+import glob
+import serial
+import serial.tools.list_ports
+
+ports = serial.tools.list_ports.comports()
+
+for port, desc, hwid in sorted(ports):
+        print("{}: {} [{}]".format(port, desc, hwid))
 
 WBC = 20
 WBM = 30
+
+def serial_ports():
+    """ Lists serial port names
+
+        :raises EnvironmentError:
+            On unsupported or unknown platforms
+        :returns:
+            A list of the serial ports available on the system
+    """
+    if sys.platform.startswith('win'):
+        ports = ['COM%s' % (i + 1) for i in range(256)]
+    elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'):
+        # this excludes your current terminal "/dev/tty"
+        ports = glob.glob('/dev/tty[A-Za-z]*')
+    elif sys.platform.startswith('darwin'):
+        ports = glob.glob('/dev/tty.*')
+    else:
+        raise EnvironmentError('Unsupported platform')
+
+    result = []
+    for port in ports:
+        try:
+            s = serial.Serial(port)
+            s.close()
+            result.append(port)
+        except (OSError, serial.SerialException):
+            pass
+    return result
+
+print(serial_ports())
 
 # start windows
 root = Tk()
 
 # create tabs
 note = ttk.Notebook(root)
-note.pack(side=TOP, fill=X)
+#note.pack(side=TOP, fill=X)
+note.grid(column=0, row=0, columnspan=3)
 tabConsole = Frame(note)
 tabMonitor = Frame(note)
 note.add(tabConsole, text="serial console")
@@ -33,12 +73,22 @@ note.bind("<<NotebookTabChanged>>", findTab)
 
 
 # status bar
+comboExample = ttk.Combobox(root, values=serial_ports())
+
+print(dict(comboExample))
+comboExample.grid(column=0, row=1)
+comboExample.current(0)
+
 bar=Button(root, text="off", bg="light grey")
-bar.pack(side=BOTTOM, fill=X)
+bar.grid(column=2, row=1)
+
+
 
 # organize tab 1
 frameConsole = Frame(tabConsole, bd=5, width=WBM)
 frameConsole.pack(side=TOP)
+
+
 
 
 # organize tab monitor
