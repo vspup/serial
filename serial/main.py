@@ -1,4 +1,5 @@
 # simple serial monitor
+# include two regimes console and monitor
 # vps.dmmi@gmail.com
 
 from tkinter import *
