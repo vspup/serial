@@ -12,12 +12,50 @@ import numpy
 import math
 import sys
 import glob
-from uart import *
+import serial
+import serial.tools.list_ports
 
-ser = Uart()
+ports = serial.tools.list_ports.comports()
+l_ports = []
+
+for port, desc, hwid in sorted(ports):
+        print("{}: {} [{}]".format(port, desc, hwid))
+        l_ports.append(port)
+print(l_ports)
+
 
 WBC = 20
 WBM = 30
+
+def serial_ports():
+    """ Lists serial port names
+
+        :raises EnvironmentError:
+            On unsupported or unknown platforms
+        :returns:
+            A list of the serial ports available on the system
+    """
+    if sys.platform.startswith('win'):
+        ports = ['COM%s' % (i + 1) for i in range(256)]
+    elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'):
+        # this excludes your current terminal "/dev/tty"
+        ports = glob.glob('/dev/tty[A-Za-z]*')
+    elif sys.platform.startswith('darwin'):
+        ports = glob.glob('/dev/tty.*')
+    else:
+        raise EnvironmentError('Unsupported platform')
+
+    result = []
+    for port in ports:
+        try:
+            s = serial.Serial(port)
+            s.close()
+            result.append(port)
+        except (OSError, serial.SerialException):
+            pass
+    return result
+
+
 
 # start windows
 root = Tk()
@@ -39,9 +77,10 @@ note.bind("<<NotebookTabChanged>>", findTab)
 
 
 # status bar
-comboSerials = ttk.Combobox(root, values=ser.getListPort())
+comboSerials = ttk.Combobox(root, values=l_ports)
 comboSerials.grid(column=0, row=1)
 comboSerials.current(0)
+#print(comboSerials.current(), comboSerials.get())
 
 serial_speeds = ['1843200', '921600', '460800', '230400', '115200', '57600', '38400', '19200', '9600', '4800', '2400', '1200', '600', '300', '150', '100', '75', '50'] #Скорость COM порта
 comboSpeed = ttk.Combobox(root, values=serial_speeds)
@@ -53,17 +92,28 @@ buttonConnect.grid(column=2, row=1)
 fConnect = False
 
 def connectUart():
+    global ser
     global fConnect
+
     if not fConnect:
-        ser.connectPort(comboSerials.get(), int(comboSpeed.get()))
+        ser = serial.Serial(
+            port=comboSerials.get(),
+            baudrate=int(comboSpeed.get()),
+            parity=serial.PARITY_NONE,
+            stopbits=serial.STOPBITS_ONE,
+            bytesize=serial.EIGHTBITS,
+            # timeout=0.5, # IMPORTANT, can be lower or higher
+            # inter_byte_timeout=0.1 # Alternative
+        )
         print(ser)
         buttonConnect['text'] = "Connected"
         fConnect = True
+
     else:
         print('disconnect')
         fConnect = False
         buttonConnect['text'] = "Connect"
-        ser.disconnectPort()
+        ser.close()
 
 buttonConnect['command'] = connectUart
 
