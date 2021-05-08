@@ -56,21 +56,28 @@ def connectUart():
     global fConnect
     if not fConnect:
         ser.connectPort(comboSerials.get(), int(comboSpeed.get()))
-        print(ser)
+        print('Connect ' + str(ser.currentPort))
         buttonConnect['text'] = "Connected"
         fConnect = True
     else:
-        print('disconnect')
         fConnect = False
         buttonConnect['text'] = "Connect"
         ser.disconnectPort()
+        print('Disconnect ' + str(ser.currentPort))
 
 buttonConnect['command'] = connectUart
 
 
 # organize tab 1
 frameConsole = Frame(tabConsole, bd=5, width=WBM)
-frameConsole.pack(side=TOP)
+frameConsole.pack(side=TOP, fill=BOTH, expand=True)
+enteryConsol = Text(frameConsole)
+enteryConsol.pack(side=LEFT, fill=BOTH, expand=True)
+#enteryConsol.pack(side=LEFT)
+
+scroll = Scrollbar(frameConsole, command=enteryConsol.yview)
+scroll.pack(side=LEFT, fill=Y)
+enteryConsol.config(yscrollcommand=scroll.set)
 
 
 
@@ -93,10 +100,16 @@ canvas.get_tk_widget().pack()
 
 
 def update():
+
     global ti
     _cur = random()
     g1.append(_cur)
     gt.append(ti)
+
+    if ser.currentPort:
+        enteryConsol.insert(END, str(ti)+"\n")
+        enteryConsol.see(END)
+
     ti = ti + 1
 
     grf.set_data(gt, g1)
@@ -106,10 +119,10 @@ def update():
     ax.set_ylim(min(g1) - 1, max(g1) + 1)
     canvas.draw()
 
-    root.after(300, update)
+    root.after(1000, update)
 
 
-root.after(300, update())
+root.after(1000, update())
 
 
 root.mainloop()

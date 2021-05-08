@@ -1,4 +1,4 @@
-# simple serial monitor
+# function uart
 # vps.dmmi@gmail.com
 
 import serial
@@ -39,7 +39,7 @@ class Uart:
 
     def disconnectPort(self):
         self.currentPort.close()
-        self.currentPort == 0
+        self.currentPort = 0
 
 
     def readPort(self):
