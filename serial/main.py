@@ -101,23 +101,37 @@ canvas.get_tk_widget().pack()
 
 def update():
 
-    global ti
-    _cur = random()
-    g1.append(_cur)
-    gt.append(ti)
 
     if ser.currentPort:
-        enteryConsol.insert(END, str(ti)+"\n")
-        enteryConsol.see(END)
+        if note.tabs().index(note.select()) == 1:
 
-    ti = ti + 1
+            global ti
+            _cur = random()
+            g1.append(_cur)
+            gt.append(ti)
+            grf.set_data(gt, g1)
+            # Update axis
+            ax = canvas.figure.axes[0]
+            ax.set_xlim(min(gt), ti)
+            ax.set_ylim(min(g1) - 1, max(g1) + 1)
+            canvas.draw()
+            ti = ti + 1
 
-    grf.set_data(gt, g1)
-    # Update axis
-    ax = canvas.figure.axes[0]
-    ax.set_xlim(min(gt), ti)
-    ax.set_ylim(min(g1) - 1, max(g1) + 1)
-    canvas.draw()
+        elif note.tabs().index(note.select()) == 0:
+            n = ser.readlnPort()
+            print(n)
+
+            if n != 0:
+                buf = ser.getBuffer()
+                #st = b''
+                #for s in buf:
+                #    st += str(s)
+                enteryConsol.insert(END, str(buf.decode('utf-8') + '\n'))
+                enteryConsol.see(END)
+
+
+
+
 
     root.after(1000, update)
 

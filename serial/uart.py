@@ -15,6 +15,7 @@ class Uart:
             self.listUart.append(port)
         print(self.listUart)
         self.currentPort = 0
+        self.buffer = b''
 
 
     def getListPort(self):
@@ -42,10 +43,11 @@ class Uart:
         self.currentPort = 0
 
 
-    def readPort(self):
+    def readlnPort(self):
         t = time.time()
-        buffer = b''
+        self.buffer = b''
         t_wait = 0.8
+        count = 0
         if self.currentPort == 0:
             job = False
         else:
@@ -55,14 +57,20 @@ class Uart:
                 if self.currentPort.inWaiting():
                     c = self.currentPort.read()  # attempt to read a character from Serial
                     if c == b'\r':
-                        buffer += c
+                        pass
                     elif c == b'\n':
-                        buffer += c  # add the newline to the buffer
+                        pass  # add the newline to the buffer
                         job = False
                     else:
-                        buffer += c  # add to the buffer
+                        self.buffer += c  # add to the buffer
+                        count += 1
             else:
-                buffer = ""
+                self.buffer = b''
                 job = False
-        return buffer
+        return count
+
+    def getBuffer(self):
+        return self.buffer
+
+    #def parse(self):
 

@@ -12,50 +12,12 @@ import numpy
 import math
 import sys
 import glob
-import serial
-import serial.tools.list_ports
+from uart import *
 
-ports = serial.tools.list_ports.comports()
-l_ports = []
-
-for port, desc, hwid in sorted(ports):
-        print("{}: {} [{}]".format(port, desc, hwid))
-        l_ports.append(port)
-print(l_ports)
-
+ser = Uart()
 
 WBC = 20
 WBM = 30
-
-def serial_ports():
-    """ Lists serial port names
-
-        :raises EnvironmentError:
-            On unsupported or unknown platforms
-        :returns:
-            A list of the serial ports available on the system
-    """
-    if sys.platform.startswith('win'):
-        ports = ['COM%s' % (i + 1) for i in range(256)]
-    elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'):
-        # this excludes your current terminal "/dev/tty"
-        ports = glob.glob('/dev/tty[A-Za-z]*')
-    elif sys.platform.startswith('darwin'):
-        ports = glob.glob('/dev/tty.*')
-    else:
-        raise EnvironmentError('Unsupported platform')
-
-    result = []
-    for port in ports:
-        try:
-            s = serial.Serial(port)
-            s.close()
-            result.append(port)
-        except (OSError, serial.SerialException):
-            pass
-    return result
-
-
 
 # start windows
 root = Tk()
@@ -77,10 +39,9 @@ note.bind("<<NotebookTabChanged>>", findTab)
 
 
 # status bar
-comboSerials = ttk.Combobox(root, values=l_ports)
+comboSerials = ttk.Combobox(root, values=ser.getListPort())
 comboSerials.grid(column=0, row=1)
 comboSerials.current(0)
-#print(comboSerials.current(), comboSerials.get())
 
 serial_speeds = ['1843200', '921600', '460800', '230400', '115200', '57600', '38400', '19200', '9600', '4800', '2400', '1200', '600', '300', '150', '100', '75', '50'] #Скорость COM порта
 comboSpeed = ttk.Combobox(root, values=serial_speeds)
@@ -92,35 +53,31 @@ buttonConnect.grid(column=2, row=1)
 fConnect = False
 
 def connectUart():
-    global ser
     global fConnect
-
     if not fConnect:
-        ser = serial.Serial(
-            port=comboSerials.get(),
-            baudrate=int(comboSpeed.get()),
-            parity=serial.PARITY_NONE,
-            stopbits=serial.STOPBITS_ONE,
-            bytesize=serial.EIGHTBITS,
-            # timeout=0.5, # IMPORTANT, can be lower or higher
-            # inter_byte_timeout=0.1 # Alternative
-        )
-        print(ser)
+        ser.connectPort(comboSerials.get(), int(comboSpeed.get()))
+        print('Connect ' + str(ser.currentPort))
         buttonConnect['text'] = "Connected"
         fConnect = True
-
     else:
-        print('disconnect')
         fConnect = False
         buttonConnect['text'] = "Connect"
-        ser.close()
+        ser.disconnectPort()
+        print('Disconnect ' + str(ser.currentPort))
 
 buttonConnect['command'] = connectUart
 
 
 # organize tab 1
 frameConsole = Frame(tabConsole, bd=5, width=WBM)
-frameConsole.pack(side=TOP)
+frameConsole.pack(side=TOP, fill=BOTH, expand=True)
+enteryConsol = Text(frameConsole)
+enteryConsol.pack(side=LEFT, fill=BOTH, expand=True)
+#enteryConsol.pack(side=LEFT)
+
+scroll = Scrollbar(frameConsole, command=enteryConsol.yview)
+scroll.pack(side=LEFT, fill=Y)
+enteryConsol.config(yscrollcommand=scroll.set)
 
 
 
@@ -143,23 +100,34 @@ canvas.get_tk_widget().pack()
 
 
 def update():
+
     global ti
-    _cur = random()
-    g1.append(_cur)
-    gt.append(ti)
+    # if ser.currentPort:
+    if note.tabs().index(note.select()) == 1:
+
+        _cur = random()
+        g1.append(_cur)
+        gt.append(ti)
+        grf.set_data(gt, g1)
+        # Update axis
+        ax = canvas.figure.axes[0]
+        ax.set_xlim(min(gt), ti)
+        ax.set_ylim(min(g1) - 1, max(g1) + 1)
+        canvas.draw()
+
+    elif note.tabs().index(note.select()) == 0:
+
+        enteryConsol.insert(END, str(ti)+"\n")
+        enteryConsol.see(END)
+
     ti = ti + 1
 
-    grf.set_data(gt, g1)
-    # Update axis
-    ax = canvas.figure.axes[0]
-    ax.set_xlim(min(gt), ti)
-    ax.set_ylim(min(g1) - 1, max(g1) + 1)
-    canvas.draw()
-
-    root.after(300, update)
 
 
-root.after(300, update())
+    root.after(1000, update)
+
+
+root.after(1000, update())
 
 
 root.mainloop()
