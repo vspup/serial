@@ -91,8 +91,10 @@ ax = fig.add_subplot(111)
 fig.subplots_adjust(bottom=0.25)
 ti = 0
 g1 = [0]
+g2 = [0]
 gt = [ti]
-grf, = ax.plot(gt, g1, 'r')
+grf1, = ax.plot(gt, g1, 'r')
+grf2, = ax.plot(gt, g2, 'b')
 
 canvas = FigureCanvasTkAgg(fig, master=frameMonitor)
 canvas.get_tk_widget().pack()
@@ -103,40 +105,39 @@ def update():
 
 
     if ser.currentPort:
-        if note.tabs().index(note.select()) == 1:
+        global ti
+        n = ser.readlnPort()
+        print(n)
+        if n != 0:
+            buf = ser.getBuffer()
+            if note.tabs().index(note.select()) == 1:
+                [y1, y2] = str(buf.decode('utf-8')).split(';');
+                g1.append(int(y1))
+                g2.append(int(y2))
+                gt.append(ti)
+                grf1.set_data(gt, g1)
+                grf2.set_data(gt, g2)
+                # Update axis
+                ax = canvas.figure.axes[0]
+                ax.set_xlim(min(gt), ti)
+                ax.set_ylim(0, 1000)
+                canvas.draw()
+                ti = ti + 1
 
-            global ti
-            _cur = random()
-            g1.append(_cur)
-            gt.append(ti)
-            grf.set_data(gt, g1)
-            # Update axis
-            ax = canvas.figure.axes[0]
-            ax.set_xlim(min(gt), ti)
-            ax.set_ylim(min(g1) - 1, max(g1) + 1)
-            canvas.draw()
-            ti = ti + 1
+            elif note.tabs().index(note.select()) == 0:
 
-        elif note.tabs().index(note.select()) == 0:
-            n = ser.readlnPort()
-            print(n)
 
-            if n != 0:
-                buf = ser.getBuffer()
-                #st = b''
-                #for s in buf:
-                #    st += str(s)
-                enteryConsol.insert(END, str(buf.decode('utf-8') + '\n'))
-                enteryConsol.see(END)
-
+                    enteryConsol.insert(END, str(buf.decode('utf-8') + '\n'))
+                    enteryConsol.see(END)
 
 
 
 
-    root.after(1000, update)
+
+    root.after(10, update)
 
 
-root.after(1000, update())
+root.after(10, update())
 
 
 root.mainloop()
